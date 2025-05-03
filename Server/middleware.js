@@ -1,24 +1,26 @@
-const express = require('express');
+const express = require("express");
 const app = express();
 const port = 3000;
-app.use(express.json())
+app.use(express.json());
 
+const validate =  function validate(req,res,next) {
+  const name = req.body.name;
+  const surname = req.body.surname;
 
-const validation = (req, res , next)=>{
-  const {name, surname} = req.body;
-  if(name != "Avijit" && surname != "pal"){
-    return res.status(400).json({message:"Invalid input: Name is not valid"})
+  if(name ==="Avijit" && surname==="Pal"){
+    res.status(200).send("The input is valid")
+    next() // here we are going back to the app.post giving back the handle. 
   }
-  next()
+  else{
+    res.status(400).send("The input os invalid")
+  }
 }
 
-
-app.get("/",(req,res)=>{
-    res.send("Hello")
+app.post("/data", validate , (req,res)=>{
+   console.log("The data is Read.")
+  
 })
-    app.post("/check", validation, (req,res)=>{
-         return res.status(200).json({message:"input valid"})
-    })
-app.listen(port,()=>{
-    console.log("The server is up and running")
+
+app.listen(port, ()=>{
+  console .log("The server is up and Runnig")
 })
