@@ -1,56 +1,69 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const mongoose = require('mongoose');
-
+const express = require("express");
+const { createConnection } = require("net");
 const app = express();
 const port = 3000;
+const path = require('path');
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, '../FrontEnd')))
+app.use(express.json());
 
-// Set up EJS as the view engine
-app.set('view engine', 'ejs');
-app.set('views', './views');
+const mongoose = require('mongoose');
+const monDbURL = "mongodb+srv://avijit:Avijitpal%401@database.dlwecr7.mongodb.net/?retryWrites=true&w=majority&appName=Database"
 
-// Middleware to parse URL-encoded bodies
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
+mongoose.connect(monDbURL).then(()=>{
+   console.log("Db is connected Succesfully")
+}).catch(err=>{
+    console.log("Unable to connnet to the DB",err);
+}) 
 
-// MongoDB Connection
-mongoose.connect('mongodb+srv://avijit:Avijitpal%401@database.dlwecr7.mongodb.net/?retryWrites=true&w=majority&appName=Database', { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('Could not connect to MongoDB', err));
+const userSchema = new mongoose.Schema({
+    name:{
+        type:String,
+        required:true
+    },
+    password:{
+        type:Number,
+        require:true
+    }
+})
 
-// Define Mongoose Schema
-const formDataSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  email: { type: String, required: true },
-  age: Number,
-  message: String,
-  createdAt: { type: Date, default: Date.now }
-});
+const user = mongoose.model('USER',userSchema);
 
-// Create Mongoose Model
-const FormData = mongoose.model('FormData', formDataSchema);
+const validation = function(req, res, next){
+   const name = req.body.name;
+   const password = req.body.password
 
-// Route to serve the form
-app.get('/', (req, res) => {
-  res.render('form');
-});
+   if(typeof name === 'string'){
+    next();
+   }
+   else{
+    res.status(400).json("Sorry put the valid type")
+   }
+}
+app.post("/submit",validation, async (req,res)=>{
+   //Now putting the data into the data base;
+         const {name, password} = req.body;
+   try{
+    const exsistingUser = await user.findOne({name:name});
+        if(exsistingUser){
+            return res.status(409).json("The username is already taken")
+        }
+  
+        const newUser = new user({
+    name,
+    password
+   })
+   await newUser.save();
+   console.log("Data  is saved ", newUser.name);
+   res.status(201).json({message: "user is registerd", user:newUser})
+   }
+   catch(error){
+    console.error("There is some issue While saving the data")
 
-// Route to handle form submission
-app.post('/submit_data', async (req, res) => {
-  try {
-    const { name, email, age, message } = req.body;
+    res.status(500).json('Error while saving the data')
+   }
+})
 
-    const newData = new FormData({ name, email, age, message });
-    await newData.save();
-
-    res.send('Data submitted successfully to MongoDB!');
-  } catch (error) {
-    console.error('Error saving data:', error);
-    res.status(500).send('Error saving data to the database.');
-  }
-});
-
-// Start the server
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
-});
+app.listen(port,()=>{
+    console.log("The server is up and running")
+})

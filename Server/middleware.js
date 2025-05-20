@@ -4,14 +4,11 @@ const port = 3000;
 
 app.use(express.json());
 
-
-
 const validation = (req, res, next)=>{
   const name = req.body.name;
   const surname = req.body.surname;
   if(name !==  "Avijit" && surname !==  "Pal"){
      return res.status(400).json("The input is not valid")
- 
   }
   else{
     return res.status(200).json("The data is valid")
